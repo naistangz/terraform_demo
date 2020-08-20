@@ -30,7 +30,6 @@ resource "aws_subnet" "public_subnet" {
 
   cidr_block              = var.subnetCIDRblock
   vpc_id                  = var.vpc_id
-  cidr_block              = var.subnetCIDRblock
   map_public_ip_on_launch = var.mapPublicIP
   availability_zone       = var.availabilityZone
 tags = {
