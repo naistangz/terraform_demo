@@ -99,7 +99,7 @@ terraform apply - will implement the code - deploy the infrastructure
 
 # Creating an AWS Subnet and security group using Terraform
 
-1. `main,tf`
+1. `main.tf`
 ```hcl-terraform
 provider "aws" {
 # which region do we have the AMI available
