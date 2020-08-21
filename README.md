@@ -103,16 +103,26 @@ terraform apply - will implement the code - deploy the infrastructure
 ```hcl-terraform
 provider "aws" {
 # which region do we have the AMI available
-  region = var.region
-
+  region     = var.region
 }
 
-# Creating an instance - launch an EC2 Instance from the AMI
+# Creating the VPC
+resource "aws_vpc" "Eng67_Anais_Terraform_VPC" {
+  cidr_block    = var.vpcCIDRblock
+
+  tags = {
+    Name = "Eng67.Anais.Terraform.VPC"
+  }
+} # end Creating VPC
+
+# Creating APP instance - launch an EC2 Instance from the AMI
 resource "aws_instance" "app_instance" {
-          ami          = "ami-08617e0e0b2d50721"
+          ami           = var.amiapp
 # what type of ec2 instance we want to create = t2.micro
           instance_type = "t2.micro"
-
+//          vpc_id                  = aws_vpc.Eng67_Anais_Terraform_VPC.id
+          subnet_id              = aws_subnet.public_subnet.id
+          vpc_security_group_ids = [aws_security_group.app_sg.id]
 # public IP
           associate_public_ip_address = true
           tags = {
@@ -120,27 +130,58 @@ resource "aws_instance" "app_instance" {
 
           }
 
-} # end Creating an instance
+} # end Creating APP instance
 
+# Creating DB instance
+resource "aws_instance" "db_instance" {
+          ami           = var.amidb
+# what type of ec2 instance we want to create = t2.micro
+          instance_type = "t2.micro"
+//          vpc_id                   = aws_vpc.Eng67_Anais_Terraform_VPC.id
+          subnet_id               = aws_subnet.private_subnet.id
+          vpc_security_group_ids   = [aws_security_group.db_sg.id]
+          associate_public_ip_address = true
+          tags = {
+            Name = "Eng67.Anais.terraform.db"
 
-# Creating a subnet block of code and attaching this to DevOpsStudent VPC
+          }
+} # end Creating DB instance
+
+# Creating public subnet block of code
 resource "aws_subnet" "public_subnet" {
 
-  cidr_block              = var.subnetCIDRblock
-  vpc_id                  = var.vpc_id
+  vpc_id                 = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  cidr_block              = var.subnetpublicCIDRblock
   map_public_ip_on_launch = var.mapPublicIP
   availability_zone       = var.availabilityZone
+
+
 tags = {
-  Name = "Eng67.Anais.Ansible.Subnet.Public"
+  Name = "Eng67.Anais.Terraform.Subnet.Public"
 }
 
 } # end Creating Public Subnet
 
-# Create a security group and attach it to the VPC
-resource "aws_security_group" "public_sg" {
-  vpc_id                  = var.vpc_id
-  name                    = "Eng67.Anais.public.SG"
-  description             = "Eng67.Anais.public.SG.terraform"
+
+# Creating a private subnet block of code
+resource "aws_subnet" "private_subnet" {
+
+  vpc_id                  = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  cidr_block              = var.subnetprivateCIDRblock
+  map_public_ip_on_launch = var.mapPublicIP
+  availability_zone       = var.availabilityZone
+tags = {
+  Name = "Eng67.Anais.Terraform.Subnet.Private"
+}
+
+} # end Creating Private Subnet
+
+# Create a app security group and attach it to the VPC
+resource "aws_security_group" "app_sg" {
+  vpc_id                  = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  name                    = "Eng67.Anais.app.SG.terraform"
+  description             = "Eng67.Anais.app.SG.terraform"
+
 
   # Allow ingress of port 80
   ingress {
@@ -160,11 +201,71 @@ resource "aws_security_group" "public_sg" {
   }
 
 tags = {
-  Name = "Eng67.Anais.public.SG"
-  Description = "Eng67.Anais.public.SG.terraform"
+  Name = "Eng67.Anais.app.SG"
+  Description = "Security group for app"
 }
 
-} # end creating public sg
+} # end creating app security group
+
+# Creating db security group
+resource "aws_security_group" "db_sg" {
+  vpc_id        = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  name          = "Eng67.Anais.DBSG.terraform"
+  description   = "DB security group"
+
+
+  # Allow ingress from my IP through SSH
+  ingress {
+    description = "Allowing app access to DB"
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  # Allow egress of all ports
+  egress {
+    cidr_blocks = var.egressCIDRblock
+    from_port   = 0
+    protocol    = "-1"
+    to_port     = 0
+  }
+
+  tags = {
+    Name        = "Eng67.Anais.DBSG.terraform"
+    Description = "Eng67.Anais.DBSG.terraform"
+  }
+} # end db security group
+
+# Create internet gateway
+resource "aws_internet_gateway" "terraform_IGW" {
+  vpc_id = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  tags = {
+    Name = "Eng67.Anais.IGW"
+  }
+}
+
+# Route table public
+resource "aws_route_table" "public_route_table" {
+  vpc_id    = aws_vpc.Eng67_Anais_Terraform_VPC.id
+//  subnet_id = aws_subnet.public_subnet.id
+  tags = {
+    Name = "Eng67.Anais.Terraform.Route.Public"
+  }
+}
+
+# Creating the Internet Access
+resource "aws_route" "Internet_access" {
+  route_table_id = aws_route_table.public_route_table.id
+  destination_cidr_block = var.destinationCIDRblock
+  gateway_id = aws_internet_gateway.terraform_IGW.id
+}
+
+# Associating the route table with the subnet
+resource "aws_route_table_association" "route_table_association" {
+  route_table_id = aws_route_table.public_route_table.id
+  subnet_id = aws_subnet.public_subnet.id
+}
 ```
 
 2. Create variables file `variables.tf` example:
