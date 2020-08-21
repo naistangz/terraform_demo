@@ -100,7 +100,7 @@ terraform apply - will implement the code - deploy the infrastructure
 # Creating an AWS Subnet and security group using Terraform
 
 1. `main,tf`
-```json
+```hcl-terraform
 provider "aws" {
 # which region do we have the AMI available
   region = var.region
@@ -168,7 +168,7 @@ tags = {
 ```
 
 2. Create variables file `variables.tf` example:
-```json
+```hcl-terraform
 
 variable "availabilityZone" {
   default = "eu-west-1b"
