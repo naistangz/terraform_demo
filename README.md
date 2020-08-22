@@ -120,7 +120,6 @@ resource "aws_instance" "app_instance" {
           ami           = var.amiapp
 # what type of ec2 instance we want to create = t2.micro
           instance_type = "t2.micro"
-//          vpc_id                  = aws_vpc.Eng67_Anais_Terraform_VPC.id
           subnet_id              = aws_subnet.public_subnet.id
           vpc_security_group_ids = [aws_security_group.app_sg.id]
 # public IP
@@ -137,7 +136,6 @@ resource "aws_instance" "db_instance" {
           ami           = var.amidb
 # what type of ec2 instance we want to create = t2.micro
           instance_type = "t2.micro"
-//          vpc_id                   = aws_vpc.Eng67_Anais_Terraform_VPC.id
           subnet_id               = aws_subnet.private_subnet.id
           vpc_security_group_ids   = [aws_security_group.db_sg.id]
           associate_public_ip_address = true
@@ -243,29 +241,28 @@ resource "aws_internet_gateway" "terraform_IGW" {
   tags = {
     Name = "Eng67.Anais.IGW"
   }
-}
+} # End creating IGW
 
 # Route table public
 resource "aws_route_table" "public_route_table" {
   vpc_id    = aws_vpc.Eng67_Anais_Terraform_VPC.id
-//  subnet_id = aws_subnet.public_subnet.id
   tags = {
     Name = "Eng67.Anais.Terraform.Route.Public"
   }
-}
+} # End creating route table
 
 # Creating the Internet Access
 resource "aws_route" "Internet_access" {
   route_table_id = aws_route_table.public_route_table.id
   destination_cidr_block = var.destinationCIDRblock
   gateway_id = aws_internet_gateway.terraform_IGW.id
-}
+} # End creating internet access
 
 # Associating the route table with the subnet
 resource "aws_route_table_association" "route_table_association" {
   route_table_id = aws_route_table.public_route_table.id
   subnet_id = aws_subnet.public_subnet.id
-}
+} # end creating route table association
 ```
 
 2. Create variables file `variables.tf` example:
@@ -287,3 +284,17 @@ variable "subnetCIDRblock" {
     default = "172.31.7.0/24"
 }
 ```
+
+3. Create template in terraform `init.sh.tpl`:
+```hcl-terraform
+#!/bin/bash
+
+cd /home/ubuntu/app
+export DB_HOST=${db_host}
+. ~/.bashrc
+node seeds/seed.js
+pm2 stop app.js
+npm install
+pm2 start app.js
+```
+Since we have launched the instances using pre-configured AMI's it will also contain files from the instance through which we generated the image. The app folder from our app instance will also be present in our newly created instance.

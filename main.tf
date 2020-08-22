@@ -52,7 +52,7 @@ resource "aws_instance" "db_instance" {
 # Creating public subnet block of code
 resource "aws_subnet" "public_subnet" {
 
-  vpc_id                 = aws_vpc.Eng67_Anais_Terraform_VPC.id
+  vpc_id                  = aws_vpc.Eng67_Anais_Terraform_VPC.id
   cidr_block              = var.subnetpublicCIDRblock
   map_public_ip_on_launch = var.mapPublicIP
   availability_zone       = var.availabilityZone

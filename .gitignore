@@ -2,4 +2,6 @@
 .terraform/
 terraform.tfstate
 terraform.tfstate.backup
-.terraform/plugins/registry.terraform.io/hashicorp/aws/3.2.0/darwin_amd64/terraform-provider-aws_v3.2.0_x5
+.terraform/plugins/registry.terraform.io/hashicorp/aws/3.2.0/darwin_amd64/terraform-provider-aws_v3.2.0_x5.vagrant/machines/ansible/virtualbox/private_key
+.vagrant/machines/web/virtualbox/private_key
+.vagrant/machines/app/virtualbox/private_key
